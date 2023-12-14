@@ -1,17 +1,30 @@
-FROM golang:1.14-buster as agentbuild
+FROM golang:1.19-buster as agentbuild
 WORKDIR /go/src/github.com/VerizonMedia/kubectl-flame
+#added
+RUN CGO_ENABLED=0 go install github.com/go-delve/delve/cmd/dlv@latest
 ADD . /go/src/github.com/VerizonMedia/kubectl-flame
 RUN go get -d -v ./...
+#RUN CGO_ENABLED=0 GOOS=windows GOARCH=arm go install github.com/go-delve/delve/cmd/dlv
+#RUN CGO_ENABLED=0 go get -ldflags "-s -w -extldflags '-static'" github.com/go-delve/delve/cmd/dlv@latest
 RUN cd agent && go build -o /go/bin/agent
 
-FROM openjdk:8-alpine as asyncprofiler
-RUN apk add build-base git linux-headers
-RUN git clone https://github.com/edeNFed/async-profiler.git
-RUN cd async-profiler && make
+# FROM openjdk:8-alpine as asyncprofiler
+# RUN apk add build-base git linux-headers
+# RUN git clone https://github.com/edeNFed/async-profiler.git
+# RUN cd async-profiler && make
+FROM alpine as asyncprofiler
+RUN apk add curl tar
+RUN curl -o async-profiler-2.9-linux-musl-x64.tar.gz -L \
+    https://github.com/jvm-profiling-tools/async-profiler/releases/download/v2.9/async-profiler-2.9-linux-musl-x64.tar.gz
+RUN tar -xvf async-profiler-2.9-linux-musl-x64.tar.gz && mv async-profiler-2.9-linux-musl-x64 async-profiler
 
 FROM alpine
 RUN mkdir -p /app/async-profiler/build
 COPY --from=agentbuild /go/bin/agent /app
+#added
+COPY --from=agentbuild /go/bin/dlv /app
 COPY --from=asyncprofiler /async-profiler/build /app/async-profiler/build
 COPY --from=asyncprofiler /async-profiler/profiler.sh /app/async-profiler
-CMD [ "/app/agent" ]
+#added
+CMD [ "/app/dlv", "--listen=:4000", "--headless=true", "--log=true", "--accept-multiclient", "--api-version=2", "exec", "/app/agent" ]
+#CMD [ "/app/agent" ]

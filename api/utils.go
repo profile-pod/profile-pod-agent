@@ -8,8 +8,9 @@ import (
 )
 
 func PublishError(err error) {
-	data := &ErrorData{Reason: err.Error()}
-	_ = PublishEvent(Error, data)
+	// data := &ErrorData{Reason: err.Error()}
+	// _ = PublishEvent(Error, data)
+	fmt.Print(err)
 }
 
 func PublishEvent(eventType EventType, data interface{}) error {

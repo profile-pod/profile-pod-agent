@@ -1,4 +1,4 @@
-FROM golang:1.14-buster as agentbuild
+FROM golang:1.19-buster as agentbuild
 WORKDIR /go/src/github.com/VerizonMedia/kubectl-flame
 ADD . /go/src/github.com/VerizonMedia/kubectl-flame
 RUN go get -d -v ./...

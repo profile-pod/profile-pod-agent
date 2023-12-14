@@ -3,8 +3,8 @@ package utils
 import (
 	"bufio"
 	"encoding/base64"
-	"github.com/VerizonMedia/kubectl-flame/api"
-	"io/ioutil"
+	"fmt"
+	"io"
 	"os"
 )
 
@@ -15,13 +15,15 @@ func PublishFlameGraph(flameFile string) error {
 	}
 
 	reader := bufio.NewReader(file)
-	content, err := ioutil.ReadAll(reader)
+	content, err := io.ReadAll(reader)
 	if err != nil {
 		return err
 	}
 
 	encoded := base64.StdEncoding.EncodeToString(content)
-	fgData := api.FlameGraphData{EncodedFile: encoded}
+	fmt.Print(encoded)
+	return nil
+	// fgData := api.FlameGraphData{EncodedFile: encoded}
 
-	return api.PublishEvent(api.FlameGraph, fgData)
+	// return api.PublishEvent(api.FlameGraph, fgData)
 }

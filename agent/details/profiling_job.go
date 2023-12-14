@@ -12,6 +12,7 @@ type ProfilingJob struct {
 	ID                string
 	ContainerID       string
 	ContainerName     string
+	ContainerRuntime  string
 	PodUID            string
 	Language          api.ProgrammingLanguage
 	TargetProcessName string

@@ -57,7 +57,7 @@ func (p *PerfProfiler) runPerfRecord(job *details.ProfilingJob) error {
 	}
 
 	duration := strconv.Itoa(int(job.Duration.Seconds()))
-	cmd := exec.Command(perfLocation, "record", "-p", pid, "-o", perfRecordOutputFileName, "-g", "--", "sleep", duration)
+	cmd := exec.Command(perfLocation, "record", "-p", pid,"-F99", "-o", perfRecordOutputFileName, "-g", "--", "sleep", duration)
 
 	return cmd.Run()
 }

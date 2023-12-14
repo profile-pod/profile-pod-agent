@@ -6,7 +6,6 @@ import (
 	"errors"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
@@ -19,8 +18,8 @@ func main() {
 	args, err := validateArgs()
 	handleError(err)
 
-	err = api.PublishEvent(api.Progress, &api.ProgressData{Time: time.Now(), Stage: api.Started})
-	handleError(err)
+	// err = api.PublishEvent(api.Progress, &api.ProgressData{Time: time.Now(), Stage: api.Started})
+	// handleError(err)
 
 	p, err := profiler.ForLanguage(args.Language)
 	handleError(err)
@@ -28,14 +27,12 @@ func main() {
 	err = p.SetUp(args)
 	handleError(err)
 
-	done := handleSignals()
+	handleSignals()
 	err = p.Invoke(args)
 	handleError(err)
-
-	err = api.PublishEvent(api.Progress, &api.ProgressData{Time: time.Now(), Stage: api.Ended})
-	handleError(err)
-
-	<-done
+	cleanUp()
+	// err = api.PublishEvent(api.Progress, &api.ProgressData{Time: time.Now(), Stage: api.Ended})
+	// handleError(err)
 }
 
 func validateArgs() (*details.ProfilingJob, error) {
@@ -49,10 +46,10 @@ func validateArgs() (*details.ProfilingJob, error) {
 	}
 
 	currentJob := &details.ProfilingJob{}
-	currentJob.ID = os.Args[1]
-	currentJob.PodUID = os.Args[2]
-	currentJob.ContainerName = os.Args[3]
-	currentJob.ContainerID = strings.Replace(os.Args[4], "docker://", "", 1)
+	currentJob.PodUID = os.Args[1]
+	currentJob.ContainerName = os.Args[2]
+	currentJob.ContainerID = os.Args[3]
+	currentJob.ContainerRuntime= os.Args[4]
 	currentJob.Duration = duration
 	currentJob.Language = api.ProgrammingLanguage(os.Args[6])
 	currentJob.Event = api.ProfilingEvent(os.Args[7])
@@ -63,24 +60,25 @@ func validateArgs() (*details.ProfilingJob, error) {
 	return currentJob, nil
 }
 
-func handleSignals() chan bool {
+func handleSignals() {
 	sigs := make(chan os.Signal, 1)
-	done := make(chan bool, 1)
 	signal.Notify(sigs, syscall.SIGTERM)
 
 	go func() {
 		<-sigs
-		os.RemoveAll("/tmp/async-profiler")
-		os.Remove("/tmp")
-		done <- true
+		cleanUp()
+		//os.Remove("/tmp")
 	}()
-
-	return done
 }
 
 func handleError(err error) {
 	if err != nil {
 		api.PublishError(err)
+		cleanUp()
 		os.Exit(1)
 	}
+}
+
+func cleanUp() {
+	os.RemoveAll("/tmp/async-profiler")
 }
