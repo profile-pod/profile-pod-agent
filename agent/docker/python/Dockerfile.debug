@@ -1,5 +1,6 @@
 FROM golang:1.19-buster as agentbuild
 WORKDIR /go/src/github.com/VerizonMedia/kubectl-flame
+RUN CGO_ENABLED=0 go install github.com/go-delve/delve/cmd/dlv@latest
 ADD . /go/src/github.com/VerizonMedia/kubectl-flame
 RUN go get -d -v ./...
 RUN cd agent && go build -o /go/bin/agent
@@ -11,9 +12,10 @@ RUN pip install pip==20.2.4
 RUN echo 'manylinux1_compatible = True' > /usr/local/lib/python3.8/site-packages/_manylinux.py
 RUN pip3 install py-spy==0.3.14
 
-FROM python:3.8-alpine
+FROM alpine
 RUN mkdir /app
 COPY --from=agentbuild /go/bin/agent /app/agent
+COPY --from=agentbuild /go/bin/dlv /app
 COPY --from=pyspybuild /usr/local/bin/py-spy /app/py-spy
 
 CMD [ "/app/agent" ]
