@@ -2,18 +2,16 @@ package profiler
 
 import (
 	"bytes"
+	"fmt"
+	"io"
+	"os"
 	"os/exec"
-	"path"
+	"path/filepath"
 	"strconv"
 	"syscall"
-	"path/filepath"
-	"os"
-	"io"
-	"io/ioutil"
 
 	"github.com/VerizonMedia/kubectl-flame/agent/details"
 	"github.com/VerizonMedia/kubectl-flame/agent/utils"
-	"github.com/VerizonMedia/kubectl-flame/agent/utils/runtime"
 )
 
 const (
@@ -25,18 +23,19 @@ const (
 type JvmProfiler struct{}
 
 func (j *JvmProfiler) SetUp(job *details.ProfilingJob) error {
-	runtimeFunc, err := runtime.ForRuntime(job.ContainerRuntime)
-	targetFs, err := runtimeFunc.GetTargetFileSystemLocation(job.ContainerID)
-	if err != nil {
-		return err
-	}
+	// runtimeFunc, err := runtime.ForRuntime(job.ContainerRuntime)
+	// targetFs, err := runtimeFunc.GetTargetFileSystemLocation(job.ContainerID)
+	// if err != nil {
+	// 	return err
+	// }
 
 	// err = os.RemoveAll("/tmp")
 	// if err != nil {
 	// 	return err
 	// }
+	tmpDir := fmt.Sprintf("/proc/%s/root/tmp/", job.ProcDetails.ProcessID)
 
-	err = syscall.Mount(path.Join(targetFs, "tmp"), "/tmp", "", syscall.MS_BIND, "")
+	err := syscall.Mount(tmpDir, "/tmp", "", syscall.MS_BIND, "")
 	if err != nil {
 		return err
 	}
@@ -50,10 +49,7 @@ func (j *JvmProfiler) SetUp(job *details.ProfilingJob) error {
 }
 
 func (j *JvmProfiler) Invoke(job *details.ProfilingJob) error {
-	pid, err := utils.FindProcessId(job)
-	if err != nil {
-		return err
-	}
+	pid  := job.ProcDetails.ProcessID
 
 	duration := strconv.Itoa(int(job.Duration.Seconds()))
 	event := string(job.Event)
@@ -62,7 +58,7 @@ func (j *JvmProfiler) Invoke(job *details.ProfilingJob) error {
 	var stderr bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &stderr
-	err = cmd.Run()
+	err := cmd.Run()
 	if err != nil {
 		return err
 	}
@@ -77,7 +73,7 @@ func (j *JvmProfiler) copyProfilerToTempDir() error {
 
 func copyFolder(src, dest string) error {
 	// Read the source folder
-	files, err := ioutil.ReadDir(src)
+	files, err := os.ReadDir(src)
 	if err != nil {
 		return err
 	}

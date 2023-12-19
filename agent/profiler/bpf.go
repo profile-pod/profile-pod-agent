@@ -51,10 +51,6 @@ func (b *BpfProfiler) Invoke(job *details.ProfilingJob) error {
 }
 
 func (b *BpfProfiler) runProfiler(job *details.ProfilingJob) error {
-	pid, err := utils.FindProcessId(job)
-	if err != nil {
-		return err
-	}
 
 	f, err := os.Create(rawProfilerOutputFile)
 	if err != nil {
@@ -63,7 +59,7 @@ func (b *BpfProfiler) runProfiler(job *details.ProfilingJob) error {
 	defer f.Close()
 
 	duration := strconv.Itoa(int(job.Duration.Seconds()))
-	profileCmd := exec.Command(profilerLocation, "-df", "-p", pid, duration)
+	profileCmd := exec.Command(profilerLocation, "-df", "-p", job.ProcDetails.ProcessID, duration)
 	profileCmd.Stdout = f
 
 	return profileCmd.Run()

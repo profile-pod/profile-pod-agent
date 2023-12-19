@@ -1,34 +1,39 @@
-//: Copyright Verizon Media
-//: Licensed under the terms of the Apache 2.0 License. See LICENSE file in the project root for terms.
+// : Copyright Verizon Media
+// : Licensed under the terms of the Apache 2.0 License. See LICENSE file in the project root for terms.
 package main
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
 	"github.com/VerizonMedia/kubectl-flame/agent/details"
-	"github.com/VerizonMedia/kubectl-flame/agent/profiler"
-	"github.com/VerizonMedia/kubectl-flame/api"
+	"github.com/VerizonMedia/kubectl-flame/agent/inspectors"
+	"github.com/VerizonMedia/kubectl-flame/agent/utils"
 )
 
 func main() {
 	args, err := validateArgs()
 	handleError(err)
 
+	pDetails, err:= utils.FindRootProcessDetails(args.PodUID,args.ContainerName)
+	handleError(err)
+
+	args.ProcDetails = *pDetails
 	// err = api.PublishEvent(api.Progress, &api.ProgressData{Time: time.Now(), Stage: api.Started})
 	// handleError(err)
 
-	p, err := profiler.ForLanguage(args.Language)
+	p, err := inspectors.DetectProfiler(args.ProcDetails)
 	handleError(err)
 
-	err = p.SetUp(args)
+	err = (*p).SetUp(args)
 	handleError(err)
 
 	handleSignals()
-	err = p.Invoke(args)
+	err = (*p).Invoke(args)
 	handleError(err)
 	cleanUp()
 	// err = api.PublishEvent(api.Progress, &api.ProgressData{Time: time.Now(), Stage: api.Ended})
@@ -51,10 +56,10 @@ func validateArgs() (*details.ProfilingJob, error) {
 	currentJob.ContainerID = os.Args[3]
 	currentJob.ContainerRuntime= os.Args[4]
 	currentJob.Duration = duration
-	currentJob.Language = api.ProgrammingLanguage(os.Args[6])
-	currentJob.Event = api.ProfilingEvent(os.Args[7])
+	//currentJob.Language = api.ProgrammingLanguage(os.Args[6])
+	currentJob.Event = details.ProfilingEvent(os.Args[6])
 	if len(os.Args) == 9 {
-		currentJob.TargetProcessName = os.Args[8]
+		currentJob.TargetProcessName = os.Args[7]
 	}
 
 	return currentJob, nil
@@ -73,7 +78,7 @@ func handleSignals() {
 
 func handleError(err error) {
 	if err != nil {
-		api.PublishError(err)
+		fmt.Print(err)
 		cleanUp()
 		os.Exit(1)
 	}

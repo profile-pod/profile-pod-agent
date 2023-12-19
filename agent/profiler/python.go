@@ -20,18 +20,14 @@ func (p *PythonProfiler) SetUp(job *details.ProfilingJob) error {
 }
 
 func (p *PythonProfiler) Invoke(job *details.ProfilingJob) error {
-	pid, err := utils.FindRootProcessId(job)
-	if err != nil {
-		return err
-	}
 
 	duration := strconv.Itoa(int(job.Duration.Seconds()))
-	cmd := exec.Command(pySpyLocation, "record", "-p", pid, "-o", pythonOutputFileName, "-d", duration, "-s", "-t")
+	cmd := exec.Command(pySpyLocation, "record", "-p", job.ProcDetails.ProcessID, "-o", pythonOutputFileName, "-d", duration, "-s", "-t")
 	var out bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &stderr
-	err = cmd.Run()
+	err := cmd.Run()
 	if err != nil {
 		return err
 	}

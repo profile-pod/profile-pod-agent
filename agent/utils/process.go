@@ -3,168 +3,15 @@ package utils
 import (
 	"bufio"
 	"errors"
-	"github.com/VerizonMedia/kubectl-flame/agent/details"
-	"github.com/VerizonMedia/kubectl-flame/api"
-	"github.com/fntlnz/mountinfo"
+	"fmt"
 	"io"
 	"os"
 	"path"
 	"strings"
+
+	"github.com/VerizonMedia/kubectl-flame/agent/details"
+	"github.com/fntlnz/mountinfo"
 )
-
-var (
-	defaultProcessNames = map[api.ProgrammingLanguage]string{
-		api.Java:   "java",
-		api.Python: "python",
-		api.Ruby:   "ruby",
-	}
-)
-
-func getProcessName(job *details.ProfilingJob) string {
-	if job.TargetProcessName != "" {
-		return job.TargetProcessName
-	}
-
-	if val, ok := defaultProcessNames[job.Language]; ok {
-		return val
-	}
-
-	return ""
-}
-
-func FindProcessId(job *details.ProfilingJob) (string, error) {
-	name := getProcessName(job)
-	foundProc := ""
-	proc, err := os.Open("/proc")
-	if err != nil {
-		return "", err
-	}
-
-	defer proc.Close()
-
-	for {
-		dirs, err := proc.Readdir(15)
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return "", err
-		}
-
-		for _, di := range dirs {
-			if !di.IsDir() {
-				continue
-			}
-
-			dname := di.Name()
-			if dname[0] < '0' || dname[0] > '9' {
-				continue
-			}
-
-			mi, err := mountinfo.GetMountInfo(path.Join("/proc", dname, "mountinfo"))
-			if err != nil {
-				continue
-			}
-
-			for _, m := range mi {
-				root := m.Root
-				if strings.Contains(root, job.PodUID) &&
-					strings.Contains(root, job.ContainerName) {
-
-					exeName, err := os.Readlink(path.Join("/proc", dname, "exe"))
-					if err != nil {
-						continue
-					}
-
-					if name != "" {
-						// search by process name
-						if strings.Contains(exeName, name) {
-							return dname, nil
-						}
-					} else {
-						if foundProc != "" {
-							return "", errors.New("found more than one process on container," +
-								" specify process name using --pgrep flag")
-						} else {
-							foundProc = dname
-						}
-					}
-				}
-			}
-		}
-	}
-
-	if foundProc != "" {
-		return foundProc, nil
-	}
-
-	return "", errors.New("could not find any process")
-}
-
-func FindRootProcessId(job *details.ProfilingJob) (string, error) {
-	name := getProcessName(job)
-	procsAndParents := make(map[string]string)
-	proc, err := os.Open("/proc")
-	if err != nil {
-		return "", err
-	}
-
-	defer proc.Close()
-
-	for {
-		dirs, err := proc.Readdir(15)
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return "", err
-		}
-
-		for _, di := range dirs {
-			if !di.IsDir() {
-				continue
-			}
-
-			dname := di.Name()
-			if dname[0] < '0' || dname[0] > '9' {
-				continue
-			}
-
-			mi, err := mountinfo.GetMountInfo(path.Join("/proc", dname, "mountinfo"))
-			if err != nil {
-				continue
-			}
-
-			for _, m := range mi {
-				root := m.Root
-				if strings.Contains(root, job.PodUID) &&
-					strings.Contains(root, job.ContainerName) {
-
-					exeName, err := os.Readlink(path.Join("/proc", dname, "exe"))
-					if err != nil {
-						continue
-					}
-
-					ppid, err := getProcessPPID(dname)
-					if err != nil {
-						return "", err
-					}
-
-					if name != "" {
-						// search by process name
-						if strings.Contains(exeName, name) {
-							procsAndParents[dname] = ppid
-						}
-					} else {
-						procsAndParents[dname] = ppid
-					}
-				}
-			}
-		}
-	}
-
-	return findRootProcess(procsAndParents)
-}
 
 func getProcessPPID(pid string) (string, error) {
 	ppidKey := "PPid"
@@ -194,4 +41,82 @@ func findRootProcess(procsAndParents map[string]string) (string, error) {
 	}
 
 	return "", errors.New("could not find root process")
+}
+
+func FindRootProcessDetails(podUID string, containerName string) (*details.ProcDetails, error) {
+	procsAndParents := make(map[string]details.ProcDetails)
+	proc, err := os.Open("/proc")
+	if err != nil {
+		return nil, err
+	}
+
+	for {
+		dirs, err := proc.Readdir(15)
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		for _, di := range dirs {
+			if !di.IsDir() {
+				continue
+			}
+
+			dname := di.Name()
+			if dname[0] < '0' || dname[0] > '9' {
+				continue
+			}
+
+			//pid, err := strconv.Atoi(dname)
+			if err != nil {
+				return nil, err
+			}
+
+			mi, err := mountinfo.GetMountInfo(path.Join("/proc", dname, "mountinfo"))
+			if err != nil {
+				continue
+			}
+
+			for _, m := range mi {
+				root := m.Root
+				if strings.Contains(root, fmt.Sprintf("%s/containers/%s", podUID, containerName)) {
+					exeName, err := os.Readlink(path.Join("/proc", dname, "exe"))
+					if err != nil {
+						// Read link may fail if target process runs not as root
+						exeName = ""
+					}
+
+					cmdLine, err := os.ReadFile(path.Join("/proc", dname, "cmdline"))
+					var cmd string
+					if err != nil {
+						// Ignore errors
+						cmd = ""
+					} else {
+						cmd = string(cmdLine)
+					}
+
+					procsAndParents[dname] = details.ProcDetails{
+						ProcessID: dname,
+						ExeName:   exeName,
+						CmdLine:   cmd,
+					}
+				}
+			}
+		}
+	}
+
+	for process, details := range procsAndParents {
+		ppid, err := getProcessPPID(process)
+		if err != nil {
+			return nil, err
+		}
+		if _, ok := procsAndParents[ppid]; !ok {
+			// Found process with ppid that is not in the same programming language - this is the root
+			return &details, nil
+		}
+	}
+
+	return nil, errors.New("could not find root process")
 }

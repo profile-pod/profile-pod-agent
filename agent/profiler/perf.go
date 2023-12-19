@@ -51,13 +51,8 @@ func (p *PerfProfiler) Invoke(job *details.ProfilingJob) error {
 }
 
 func (p *PerfProfiler) runPerfRecord(job *details.ProfilingJob) error {
-	pid, err := utils.FindRootProcessId(job)
-	if err != nil {
-		return err
-	}
-
 	duration := strconv.Itoa(int(job.Duration.Seconds()))
-	cmd := exec.Command(perfLocation, "record", "-p", pid,"-F99", "-o", perfRecordOutputFileName, "-g", "--", "sleep", duration)
+	cmd := exec.Command(perfLocation, "record", "-p", job.ProcDetails.ProcessID,"-F99", "-o", perfRecordOutputFileName, "-g", "--", "sleep", duration)
 
 	return cmd.Run()
 }

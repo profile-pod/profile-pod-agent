@@ -1,4 +1,4 @@
-package api
+package details
 
 type ProfilingEvent string
 

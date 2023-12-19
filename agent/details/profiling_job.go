@@ -3,7 +3,6 @@
 package details
 
 import (
-	"github.com/VerizonMedia/kubectl-flame/api"
 	"time"
 )
 
@@ -14,7 +13,13 @@ type ProfilingJob struct {
 	ContainerName     string
 	ContainerRuntime  string
 	PodUID            string
-	Language          api.ProgrammingLanguage
 	TargetProcessName string
-	Event             api.ProfilingEvent
+	Event             ProfilingEvent
+	ProcDetails       ProcDetails
+}
+
+type ProcDetails struct {
+	ProcessID string
+	ExeName   string
+	CmdLine   string
 }
