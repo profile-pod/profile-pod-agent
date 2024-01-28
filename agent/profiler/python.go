@@ -3,7 +3,6 @@ package profiler
 import (
 	"bytes"
 	"github.com/VerizonMedia/kubectl-flame/agent/details"
-	"github.com/VerizonMedia/kubectl-flame/agent/utils"
 	"os/exec"
 	"strconv"
 )
@@ -19,7 +18,7 @@ func (p *PythonProfiler) SetUp(job *details.ProfilingJob) error {
 	return nil
 }
 
-func (p *PythonProfiler) Invoke(job *details.ProfilingJob) error {
+func (p *PythonProfiler) Invoke(job *details.ProfilingJob) (string,error) {
 
 	duration := strconv.Itoa(int(job.Duration.Seconds()))
 	cmd := exec.Command(pySpyLocation, "record", "-p", job.ProcDetails.ProcessID, "-o", pythonOutputFileName, "-d", duration, "-s", "-t")
@@ -29,8 +28,8 @@ func (p *PythonProfiler) Invoke(job *details.ProfilingJob) error {
 	cmd.Stderr = &stderr
 	err := cmd.Run()
 	if err != nil {
-		return err
+		return "",err
 	}
 
-	return utils.PublishFlameGraph(pythonOutputFileName)
+	return pythonOutputFileName,nil
 }

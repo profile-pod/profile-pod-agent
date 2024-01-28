@@ -2,16 +2,16 @@ package profiler
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"os"
+	"path"
 	"os/exec"
 	"path/filepath"
 	"strconv"
 	"syscall"
 
 	"github.com/VerizonMedia/kubectl-flame/agent/details"
-	"github.com/VerizonMedia/kubectl-flame/agent/utils"
+	"github.com/VerizonMedia/kubectl-flame/agent/utils/runtime"
 )
 
 const (
@@ -23,32 +23,21 @@ const (
 type JvmProfiler struct{}
 
 func (j *JvmProfiler) SetUp(job *details.ProfilingJob) error {
-	// runtimeFunc, err := runtime.ForRuntime(job.ContainerRuntime)
-	// targetFs, err := runtimeFunc.GetTargetFileSystemLocation(job.ContainerID)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// err = os.RemoveAll("/tmp")
-	// if err != nil {
-	// 	return err
-	// }
-	tmpDir := fmt.Sprintf("/proc/%s/root/tmp/", job.ProcDetails.ProcessID)
-
-	err := syscall.Mount(tmpDir, "/tmp", "", syscall.MS_BIND, "")
+	runtimeFunc, err := runtime.ForRuntime(job.ContainerRuntime)
+	targetFs, err := runtimeFunc.GetTargetFileSystemLocation(job.ContainerID)
+	if err != nil {
+	return err
+	}
+	
+	err = syscall.Mount(path.Join(targetFs, "tmp"), "/tmp", "", syscall.MS_BIND, "")
 	if err != nil {
 		return err
 	}
-	//err = os.Symlink(path.Join(targetFs, "tmp"), "/tmp")
-	// if err != nil {
-	// 	return err
-	// }
 
 	return copyFolder("/app/async-profiler", "/tmp/async-profiler")
-	//return j.copyProfilerToTempDir()
 }
 
-func (j *JvmProfiler) Invoke(job *details.ProfilingJob) error {
+func (j *JvmProfiler) Invoke(job *details.ProfilingJob) (string,error) {
 	pid  := job.ProcDetails.ProcessID
 
 	duration := strconv.Itoa(int(job.Duration.Seconds()))
@@ -60,16 +49,12 @@ func (j *JvmProfiler) Invoke(job *details.ProfilingJob) error {
 	cmd.Stderr = &stderr
 	err := cmd.Run()
 	if err != nil {
-		return err
+		return "",err
 	}
 
-	return utils.PublishFlameGraph(fileName)
+	return fileName,nil
 }
 
-func (j *JvmProfiler) copyProfilerToTempDir() error {
-	cmd := exec.Command("cp", "-r", "/app/async-profiler", "/tmp")
-	return cmd.Run()
-}
 
 func copyFolder(src, dest string) error {
 	// Read the source folder

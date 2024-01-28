@@ -6,5 +6,5 @@ import (
 
 type FlameGraphProfiler interface {
 	SetUp(job *details.ProfilingJob) error
-	Invoke(job *details.ProfilingJob) error
+	Invoke(job *details.ProfilingJob) (string,error)
 }

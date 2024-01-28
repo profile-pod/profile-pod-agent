@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"github.com/VerizonMedia/kubectl-flame/agent/details"
-	"github.com/VerizonMedia/kubectl-flame/agent/utils"
 )
 
 const (
@@ -21,7 +20,7 @@ func (r *RubyProfiler) SetUp(job *details.ProfilingJob) error {
 	return nil
 }
 
-func (r *RubyProfiler) Invoke(job *details.ProfilingJob) error {
+func (r *RubyProfiler) Invoke(job *details.ProfilingJob) (string,error) {
 
 	duration := strconv.Itoa(int(job.Duration.Seconds()))
 	cmd := exec.Command(rbspyLocation, "record", "--pid", job.ProcDetails.ProcessID, "--file", rbspyOutputFileName, "--duration", duration, "--format", "flamegraph")
@@ -31,8 +30,8 @@ func (r *RubyProfiler) Invoke(job *details.ProfilingJob) error {
 	cmd.Stderr = &stderr
 	err := cmd.Run()
 	if err != nil {
-		return fmt.Errorf("could not launch profiler: %w", err)
+		return "",fmt.Errorf("could not launch profiler: %w", err)
 	}
 
-	return utils.PublishFlameGraph(rbspyOutputFileName)
+	return rbspyOutputFileName,nil
 }

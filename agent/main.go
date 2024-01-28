@@ -23,8 +23,6 @@ func main() {
 	handleError(err)
 
 	args.ProcDetails = *pDetails
-	// err = api.PublishEvent(api.Progress, &api.ProgressData{Time: time.Now(), Stage: api.Started})
-	// handleError(err)
 
 	p, err := inspectors.DetectProfiler(args.ProcDetails)
 	handleError(err)
@@ -33,16 +31,16 @@ func main() {
 	handleError(err)
 
 	handleSignals()
-	err = (*p).Invoke(args)
+	flameGraphLocation,err := (*p).Invoke(args);
 	handleError(err)
+
+	utils.PublishFlameGraph(flameGraphLocation)
 	cleanUp()
-	// err = api.PublishEvent(api.Progress, &api.ProgressData{Time: time.Now(), Stage: api.Ended})
-	// handleError(err)
 }
 
 func validateArgs() (*details.ProfilingJob, error) {
-	if len(os.Args) != 8 && len(os.Args) != 9 {
-		return nil, errors.New("expected 7 or 8 arguments")
+	if len(os.Args) != 7 && len(os.Args) != 8 {
+		return nil, errors.New("expected 7 or 6 arguments")
 	}
 
 	duration, err := time.ParseDuration(os.Args[5])
@@ -58,7 +56,7 @@ func validateArgs() (*details.ProfilingJob, error) {
 	currentJob.Duration = duration
 	//currentJob.Language = api.ProgrammingLanguage(os.Args[6])
 	currentJob.Event = details.ProfilingEvent(os.Args[6])
-	if len(os.Args) == 9 {
+	if len(os.Args) == 8 {
 		currentJob.TargetProcessName = os.Args[7]
 	}
 

@@ -36,18 +36,18 @@ func (b *BpfProfiler) SetUp(job *details.ProfilingJob) error {
 	return b.moveSources(expectedSourcesLocation)
 }
 
-func (b *BpfProfiler) Invoke(job *details.ProfilingJob) error {
+func (b *BpfProfiler) Invoke(job *details.ProfilingJob) (string,error) {
 	err := b.runProfiler(job)
 	if err != nil {
-		return fmt.Errorf("profiling failed: %s", err)
+		return "",fmt.Errorf("profiling failed: %s", err)
 	}
 
 	err = b.generateFlameGraph()
 	if err != nil {
-		return fmt.Errorf("flamegraph generation failed: %s", err)
+		return "",fmt.Errorf("flamegraph generation failed: %s", err)
 	}
 
-	return utils.PublishFlameGraph(flameGraphOutputLocation)
+	return flameGraphOutputLocation,nil
 }
 
 func (b *BpfProfiler) runProfiler(job *details.ProfilingJob) error {
