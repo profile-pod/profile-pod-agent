@@ -1,10 +1,8 @@
 package profiler
 
-import (
-	"github.com/VerizonMedia/kubectl-flame/agent/details"
-)
+import "github.com/profile-pod/profile-pod-agent/agent/details"
 
 type FlameGraphProfiler interface {
 	SetUp(job *details.ProfilingJob) error
-	Invoke(job *details.ProfilingJob) (string,error)
+	Invoke(job *details.ProfilingJob) (string, error)
 }

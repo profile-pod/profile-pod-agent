@@ -1,4 +1,4 @@
-module github.com/VerizonMedia/kubectl-flame
+module github.com/profile-pod/profile-pod-agent
 
 go 1.21
 

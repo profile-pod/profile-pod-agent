@@ -4,14 +4,14 @@ import (
 	"bytes"
 	"io"
 	"os"
-	"path"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strconv"
 	"syscall"
 
-	"github.com/VerizonMedia/kubectl-flame/agent/details"
-	"github.com/VerizonMedia/kubectl-flame/agent/utils/runtime"
+	"github.com/profile-pod/profile-pod-agent/agent/details"
+	"github.com/profile-pod/profile-pod-agent/agent/utils/runtime"
 )
 
 const (
@@ -26,9 +26,9 @@ func (j *JvmProfiler) SetUp(job *details.ProfilingJob) error {
 	runtimeFunc, err := runtime.ForRuntime(job.ContainerRuntime)
 	targetFs, err := runtimeFunc.GetTargetFileSystemLocation(job.ContainerID)
 	if err != nil {
-	return err
+		return err
 	}
-	
+
 	err = syscall.Mount(path.Join(targetFs, "tmp"), "/tmp", "", syscall.MS_BIND, "")
 	if err != nil {
 		return err
@@ -37,8 +37,8 @@ func (j *JvmProfiler) SetUp(job *details.ProfilingJob) error {
 	return copyFolder("/app/async-profiler", "/tmp/async-profiler")
 }
 
-func (j *JvmProfiler) Invoke(job *details.ProfilingJob) (string,error) {
-	pid  := job.ProcDetails.ProcessID
+func (j *JvmProfiler) Invoke(job *details.ProfilingJob) (string, error) {
+	pid := job.ProcDetails.ProcessID
 
 	duration := strconv.Itoa(int(job.Duration.Seconds()))
 	event := string(job.Event)
@@ -49,12 +49,11 @@ func (j *JvmProfiler) Invoke(job *details.ProfilingJob) (string,error) {
 	cmd.Stderr = &stderr
 	err := cmd.Run()
 	if err != nil {
-		return "",err
+		return "", err
 	}
 
-	return fileName,nil
+	return fileName, nil
 }
-
 
 func copyFolder(src, dest string) error {
 	// Read the source folder

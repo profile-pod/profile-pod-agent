@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/VerizonMedia/kubectl-flame/agent/details"
+	"github.com/profile-pod/profile-pod-agent/agent/details"
 )
 
 const (
@@ -28,33 +28,33 @@ func (p *PerfProfiler) SetUp(job *details.ProfilingJob) error {
 	return nil
 }
 
-func (p *PerfProfiler) Invoke(job *details.ProfilingJob) (string,error) {
+func (p *PerfProfiler) Invoke(job *details.ProfilingJob) (string, error) {
 	err := p.runPerfRecord(job)
 	if err != nil {
-		return "",fmt.Errorf("perf record failed: %s", err)
+		return "", fmt.Errorf("perf record failed: %s", err)
 	}
 
 	err = p.runPerfScript(job)
 	if err != nil {
-		return "",fmt.Errorf("perf script failed: %s", err)
+		return "", fmt.Errorf("perf script failed: %s", err)
 	}
 
 	err = p.filterInternalFunction()
 	if err != nil {
-		return "",fmt.Errorf("filter Internal Function from perf output failed: %s", err)
+		return "", fmt.Errorf("filter Internal Function from perf output failed: %s", err)
 	}
 
 	err = p.foldPerfOutput(job)
 	if err != nil {
-		return "",fmt.Errorf("folding perf output failed: %s", err)
+		return "", fmt.Errorf("folding perf output failed: %s", err)
 	}
 
 	err = p.generateFlameGraph(job)
 	if err != nil {
-		return "",fmt.Errorf("flamegraph generation failed: %s", err)
+		return "", fmt.Errorf("flamegraph generation failed: %s", err)
 	}
 
-	return flameGraphPerfOutputFile,nil
+	return flameGraphPerfOutputFile, nil
 }
 
 func (p *PerfProfiler) runPerfRecord(job *details.ProfilingJob) error {
@@ -90,7 +90,7 @@ func (p *PerfProfiler) foldPerfOutput(job *details.ProfilingJob) error {
 	return cmd.Run()
 }
 
-func (p *PerfProfiler) filterInternalFunction()(error){
+func (p *PerfProfiler) filterInternalFunction() error {
 	file, err := os.Open(perfScriptOutputFileName)
 	if err != nil {
 		return err

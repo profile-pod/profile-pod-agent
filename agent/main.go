@@ -10,16 +10,16 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/VerizonMedia/kubectl-flame/agent/details"
-	"github.com/VerizonMedia/kubectl-flame/agent/inspectors"
-	"github.com/VerizonMedia/kubectl-flame/agent/utils"
+	"github.com/profile-pod/profile-pod-agent/agent/inspectors"
+	"github.com/profile-pod/profile-pod-agent/agent/utils"
+	"github.com/profile-pod/profile-pod-agent/agent/details"
 )
 
 func main() {
 	args, err := validateArgs()
 	handleError(err, "Error validate Args")
 
-	pDetails, err:= utils.FindRootProcessDetails(args.PodUID,args.ContainerName)
+	pDetails, err := utils.FindRootProcessDetails(args.PodUID, args.ContainerName)
 	handleError(err, "Error find process id")
 
 	args.ProcDetails = *pDetails
@@ -31,11 +31,11 @@ func main() {
 	handleError(err, "Error SetUp profiler")
 
 	handleSignals()
-	flameGraphLocation,err := (*p).Invoke(args);
+	flameGraphLocation, err := (*p).Invoke(args)
 	handleError(err, "Error Invoke profiler")
 
 	err = utils.PublishFlameGraph(flameGraphLocation)
-	handleError(err,"Error Publish Flame Graph")
+	handleError(err, "Error Publish Flame Graph")
 	cleanUp()
 }
 
@@ -53,7 +53,7 @@ func validateArgs() (*details.ProfilingJob, error) {
 	currentJob.PodUID = os.Args[1]
 	currentJob.ContainerName = os.Args[2]
 	currentJob.ContainerID = os.Args[3]
-	currentJob.ContainerRuntime= os.Args[4]
+	currentJob.ContainerRuntime = os.Args[4]
 	currentJob.Duration = duration
 	//currentJob.Language = api.ProgrammingLanguage(os.Args[6])
 	currentJob.Event = details.ProfilingEvent(os.Args[6])
@@ -77,7 +77,7 @@ func handleSignals() {
 
 func handleError(err error, message string) {
 	if err != nil {
-		fmt.Printf(message + ": %s", err)
+		fmt.Printf(message+": %s", err)
 		cleanUp()
 		os.Exit(1)
 	}

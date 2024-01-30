@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/VerizonMedia/kubectl-flame/agent/details"
-	"github.com/VerizonMedia/kubectl-flame/agent/profiler"
+	"github.com/profile-pod/profile-pod-agent/agent/details"
+	"github.com/profile-pod/profile-pod-agent/agent/profiler"
 )
 
 type javaInspector struct{}

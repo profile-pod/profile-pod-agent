@@ -9,8 +9,8 @@ import (
 	"path"
 	"strings"
 
-	"github.com/VerizonMedia/kubectl-flame/agent/details"
 	"github.com/fntlnz/mountinfo"
+	"github.com/profile-pod/profile-pod-agent/agent/details"
 )
 
 func getProcessPPID(pid string) (string, error) {

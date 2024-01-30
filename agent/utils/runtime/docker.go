@@ -4,7 +4,7 @@ import (
 	"os"
 	"fmt"
 
-	"github.com/VerizonMedia/kubectl-flame/agent/common"
+	"github.com/profile-pod/profile-pod-agent/agent/common"
 )
 
 const (
