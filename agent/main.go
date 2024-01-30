@@ -17,24 +17,25 @@ import (
 
 func main() {
 	args, err := validateArgs()
-	handleError(err)
+	handleError(fmt.Errorf("Error validate Args: %s", err))
 
 	pDetails, err:= utils.FindRootProcessDetails(args.PodUID,args.ContainerName)
-	handleError(err)
+	handleError(fmt.Errorf("Error find process id: %s", err))
 
 	args.ProcDetails = *pDetails
 
 	p, err := inspectors.DetectProfiler(args.ProcDetails)
-	handleError(err)
+	handleError(fmt.Errorf("Error detect profiler: %s", err))
 
 	err = (*p).SetUp(args)
-	handleError(err)
+	handleError(fmt.Errorf("Error SetUp profiler: %s", err))
 
 	handleSignals()
 	flameGraphLocation,err := (*p).Invoke(args);
-	handleError(err)
+	handleError(fmt.Errorf("Error Invoke profiler: %s", err))
 
-	utils.PublishFlameGraph(flameGraphLocation)
+	err = utils.PublishFlameGraph(flameGraphLocation)
+	handleError(fmt.Errorf("Error Publish Flame Graph: %s", err))
 	cleanUp()
 }
 
