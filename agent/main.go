@@ -17,25 +17,25 @@ import (
 
 func main() {
 	args, err := validateArgs()
-	handleError(fmt.Errorf("Error validate Args: %s", err))
+	handleError(err, "Error validate Args")
 
 	pDetails, err:= utils.FindRootProcessDetails(args.PodUID,args.ContainerName)
-	handleError(fmt.Errorf("Error find process id: %s", err))
+	handleError(err, "Error find process id")
 
 	args.ProcDetails = *pDetails
 
 	p, err := inspectors.DetectProfiler(args.ProcDetails)
-	handleError(fmt.Errorf("Error detect profiler: %s", err))
+	handleError(err, "Error detect profiler")
 
 	err = (*p).SetUp(args)
-	handleError(fmt.Errorf("Error SetUp profiler: %s", err))
+	handleError(err, "Error SetUp profiler")
 
 	handleSignals()
 	flameGraphLocation,err := (*p).Invoke(args);
-	handleError(fmt.Errorf("Error Invoke profiler: %s", err))
+	handleError(err, "Error Invoke profiler")
 
 	err = utils.PublishFlameGraph(flameGraphLocation)
-	handleError(fmt.Errorf("Error Publish Flame Graph: %s", err))
+	handleError(err,"Error Publish Flame Graph")
 	cleanUp()
 }
 
@@ -75,9 +75,9 @@ func handleSignals() {
 	}()
 }
 
-func handleError(err error) {
+func handleError(err error, message string) {
 	if err != nil {
-		fmt.Print(err)
+		fmt.Printf(message + ": %s", err)
 		cleanUp()
 		os.Exit(1)
 	}
