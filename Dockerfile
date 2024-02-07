@@ -13,9 +13,11 @@ RUN pip3 install py-spy==0.3.14
 
 FROM bitnami/minideb as asyncprofiler
 RUN install_packages curl tar ca-certificates
-RUN curl -o async-profiler-2.9-linux-x64.tar.gz -L \
-    https://github.com/jvm-profiling-tools/async-profiler/releases/download/v2.9/async-profiler-2.9-linux-x64.tar.gz
-RUN tar -xvf async-profiler-2.9-linux-x64.tar.gz && mv async-profiler-2.9-linux-x64 async-profiler
+RUN curl -o async-profiler-3.0-linux-x64.tar.gz -L \
+    https://github.com/jvm-profiling-tools/async-profiler/releases/download/v3.0/async-profiler-3.0-linux-x64.tar.gz
+RUN tar -xvf async-profiler-3.0-linux-x64.tar.gz && mkdir -p async-profiler/lib && \
+    mkdir async-profiler/bin && mv async-profiler-3.0-linux-x64/bin/asprof async-profiler/bin/ && \
+    mv async-profiler-3.0-linux-x64/lib/libasyncProfiler.so async-profiler/lib/ 
 
 
 FROM bitnami/minideb as nodejsbuild

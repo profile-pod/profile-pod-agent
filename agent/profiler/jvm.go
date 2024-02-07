@@ -13,9 +13,9 @@ import (
 )
 
 const (
-	profilerDir = "/tmp/async-profiler"
+	profilerDir = "/tmp/async-profiler/bin"
 	fileName    = "/tmp/flamegraph.html"
-	profilerSh  = profilerDir + "/profiler.sh"
+	profilerCommand  = profilerDir + "/asprof"
 )
 
 type JvmProfiler struct{}
@@ -40,7 +40,7 @@ func (j *JvmProfiler) Invoke(job *details.ProfilingJob) (string, error) {
 
 	duration := strconv.Itoa(int(job.Duration.Seconds()))
 	event := string(job.Event)
-	cmd := exec.Command(profilerSh, "-d", duration, "-f", fileName, "-e", event, pid)
+	cmd := exec.Command(profilerCommand, "-d", duration, "-f", fileName, "-e", event, pid)
 	var out bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.Stdout = &out
