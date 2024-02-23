@@ -1,0 +1,41 @@
+FROM golang:1.20-buster as agentbuild
+WORKDIR /app
+RUN CGO_ENABLED=0 go install github.com/go-delve/delve/cmd/dlv@latest
+ADD . ./
+RUN go get -d -v ./...
+RUN cd agent && go build -o /go/bin/agent
+
+FROM python:3.8-alpine AS pyspybuild
+# only works with pip version 20.2.4
+# https://github.com/benfred/py-spy/issues/353
+RUN pip install pip==20.2.4
+RUN echo 'manylinux1_compatible = True' > /usr/local/lib/python3.8/site-packages/_manylinux.py
+RUN pip3 install py-spy==0.3.14
+
+FROM bitnami/minideb as asyncprofiler
+RUN install_packages curl tar ca-certificates
+RUN curl -o async-profiler-3.0-linux-x64.tar.gz -L \
+    https://github.com/jvm-profiling-tools/async-profiler/releases/download/v3.0/async-profiler-3.0-linux-x64.tar.gz
+RUN tar -xvf async-profiler-3.0-linux-x64.tar.gz && mkdir -p async-profiler/lib && \
+    mkdir async-profiler/bin && mv async-profiler-3.0-linux-x64/bin/asprof async-profiler/bin/ && \
+    mv async-profiler-3.0-linux-x64/lib/libasyncProfiler.so async-profiler/lib/ 
+
+
+FROM bitnami/minideb as nodejsbuild
+RUN install_packages git ca-certificates
+RUN git clone https://github.com/brendangregg/FlameGraph
+RUN find ./FlameGraph -mindepth 1 ! \( -name "flamegraph.pl" -o -name "stackcollapse-perf.pl" \) -exec rm -rf {} +
+
+FROM alpine
+WORKDIR  /app
+COPY --link --from=agentbuild /go/bin/agent /app/agent
+COPY --link --from=agentbuild /go/bin/dlv /app
+#Copy for python profiler
+COPY --link --from=pyspybuild /usr/local/bin/py-spy /app/py-spy
+#Copy for jvm profiler
+COPY --link --from=asyncprofiler /async-profiler /app/async-profiler
+#Copy for perf profiler
+COPY --link --from=nodejsbuild /FlameGraph /app/FlameGraph
+RUN apk add --update perf perl && ln -s /usr/bin/perf ./perf
+
+CMD [ "/app/agent" ]
