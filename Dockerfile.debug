@@ -26,22 +26,6 @@ RUN install_packages git ca-certificates
 RUN git clone https://github.com/brendangregg/FlameGraph
 RUN find ./FlameGraph -mindepth 1 ! \( -name "flamegraph.pl" -o -name "stackcollapse-perf.pl" \) -exec rm -rf {} +
 
-# FROM bitnami/minideb:buster
-# WORKDIR  /app
-# COPY --link --from=agentbuild /go/bin/agent /app/agent
-# COPY --link --from=agentbuild /go/bin/dlv /app
-# #Copy for python profiler
-# COPY --link --from=pyspybuild /usr/local/bin/py-spy /app/py-spy
-# #Copy for jvm profiler
-# COPY --link --from=asyncprofiler /async-profiler /app/async-profiler
-# #Copy for perf profiler
-# COPY --link --from=nodejsbuild /FlameGraph /app/FlameGraph
-# RUN install_packages linux-perf && ln -s /usr/bin/perf_4.19 ./perf
-# # COPY --link --from=nodejsbuild /usr/bin/perf /app/perf
-# # COPY --link --from=nodejsbuild /usr/bin/perl /usr/bin/perl
-
-# CMD [ "/app/agent" ]
-
 FROM bitnami/minideb
 WORKDIR  /app
 COPY --link --from=agentbuild /go/bin/agent /app/agent
@@ -53,8 +37,5 @@ COPY --link --from=asyncprofiler /async-profiler /app/async-profiler
 #Copy for perf profiler
 COPY --link --from=nodejsbuild /FlameGraph /app/FlameGraph
 RUN install_packages linux-perf && ln -s /usr/bin/perf ./perf
-
-#For ubunto
-#RUN apt update && apt install -y linux-tools-generic libswitch-perl && ln -s /usr/lib/linux-tools/5.15.0-91-generic/perf ./perf
 
 CMD [ "/app/agent" ]
